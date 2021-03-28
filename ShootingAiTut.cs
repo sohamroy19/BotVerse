@@ -2,8 +2,12 @@
 using System.IO;   
 using UnityEngine;
 using UnityEngine.AI;
+using UnityH5Loader;
+
 public class Dendrite
     {
+        static int count = 0;
+
         private float wt;
         public float Weight
         {
@@ -14,16 +18,25 @@ public class Dendrite
         //Provide a constructor for the class.
         //It is always better to provide a constructor instead of using
         //the compiler provided constructor
-        public Dendrite()
+        public Dendrite(float[][] weights)
         {
-            wt = getRandom(0.00000001f, 1.0f);
-        }
+            // weights has 4*4 weights, then 4*2 weights
+            // (0 1 2 3)*4
+            // (4 5)*4
+            // count varies from 0 to 23
+            int row, col;
+            if (count < 16) {
+                row = 0;
+                col = count;
+            } else {
+                row = 1;
+                col = count - 16;
+            }
 
-        private float getRandom(float MinValue, float MaxValue)
-        {
-            return UnityEngine.Random.Range(MinValue, MaxValue);
-        }
+            count++;
 
+            wt = weights[row][col];
+        }
     }
 
 class Neuron
@@ -46,14 +59,14 @@ class Neuron
             { _value = value; }
         }
 
-        public void AddDendrites(int nDendrites)
+        public void AddDendrites(int nDendrites, float[][] weights)
         {
             int i;
             //Dendrite d;
             for(i=0;i<nDendrites;i++)
             {
                 //d = new Dendrite();
-                dendrites.Add(new Dendrite());
+                dendrites.Add(new Dendrite(weights));
             }
         }
 
@@ -108,12 +121,12 @@ class Layer
            neurons[index] = n;
        }
 
-       public void AddDendritesToEachNeuron(int nDendrites)
+       public void AddDendritesToEachNeuron(int nDendrites, float[][] weights)
        {
            int i;
            for(i=0;i<neurons.Count;i++)
            {
-               neurons[i].AddDendrites(nDendrites);
+               neurons[i].AddDendrites(nDendrites, weights);
            }
        }
 
@@ -170,7 +183,7 @@ class NeuralNetwork
         //please note the nNeuronsInLayers[] arguement here.
         //it is an array which contains the number of neurons
         //in each layer
-        public NeuralNetwork(List<int> nNeuronsInLayers)
+        public NeuralNetwork(List<int> nNeuronsInLayers, float[][] weights)
         {
             layers = new List<Layer>();
             int nLayers = nNeuronsInLayers.Count; //we copy this to a variable
@@ -199,7 +212,7 @@ class NeuralNetwork
                         //in previous layer
                         if (lyr > 0)
                         {
-                            l.AddDendritesToEachNeuron(nNeuronsInLayers[lyr - 1]);
+                            l.AddDendritesToEachNeuron(nNeuronsInLayers[lyr - 1], weights);
                         }
 
                         layers.Add(l);
@@ -369,14 +382,31 @@ public class ShootingAiTut : MonoBehaviour
 
     NeuralNetwork ann;
 
+    // Get path for required file
+    private static string getPath(){
+        #if UNITY_EDITOR
+            return Application.dataPath;
+        #elif UNITY_ANDROID
+            return Application.persistentDataPath;// +fileName;
+        #elif UNITY_IPHONE
+            return Application.dataPath
+                                .Substring(0, Application.dataPath.Length - 5)
+                                .Substring(0, path.LastIndexOf('/'))
+                                + "/Documents";
+        #else
+            return Application.dataPath;// +"/"+ fileName;
+        #endif
+    }
+
     private void Awake()
     {
         player = GameObject.Find("PlayerObj").transform;
         agent = GetComponent<NavMeshAgent>();
 
-        string[] lines;
-        lines = File.ReadAllLines(getPath() + "/weights.csv");
         // 4*4 weights, then 4*2 weights
+        float[][] weights = new float[2][];
+        weights[0] = H5Loader.LoadFloatDataset(getPath() + "/test.hdf5", "one");
+        weights[1] = H5Loader.LoadFloatDataset(getPath() + "/test.hdf5", "two");
 
         List<int> nNeuronsInEachLayer;
         int nInputNeurons, nOutputNeurons, NeuronsInEachLayer, nHiddenLayers;
@@ -389,13 +419,13 @@ public class ShootingAiTut : MonoBehaviour
         nNeuronsInEachLayer = new List<int>(nHiddenLayers+2);
 
         nNeuronsInEachLayer.Add(nInputNeurons);
-        for(int i=0;i<nHiddenLayers;i++)
+        for(int i = 0;i<nHiddenLayers;i++)
         {
             nNeuronsInEachLayer.Add(NeuronsInEachLayer);
         }
         nNeuronsInEachLayer.Add(nOutputNeurons);
 
-        ann = new NeuralNetwork(nNeuronsInEachLayer);   // Identity activation function by default
+        ann = new NeuralNetwork(nNeuronsInEachLayer, weights);   // Identity activation function by default
         ann.ActivationAlgorithm = NeuralNetwork.ActivationAlgorithms.BentIdentity;
     }
     private void Update()
@@ -501,22 +531,6 @@ public class ShootingAiTut : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, attackRange);
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, sightRange);
-    }
-
-    // Get path for given CSV file
-    private static string getPath(){
-        #if UNITY_EDITOR
-            return Application.dataPath;
-        #elif UNITY_ANDROID
-            return Application.persistentDataPath;// +fileName;
-        #elif UNITY_IPHONE
-            return Application.dataPath
-                                .Substring(0, Application.dataPath.Length - 5)
-                                .Substring(0, path.LastIndexOf('/'))
-                                 + "/Documents";
-        #else
-            return Application.dataPath;// +"/"+ fileName;
-        #endif
     }
 
     private Vector3 executeNet(Vector3 bot, Vector3 player)
