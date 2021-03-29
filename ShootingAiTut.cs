@@ -3,6 +3,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityH5Loader;
+using Unity.Barracuda;
 
 public class Dendrite
     {
@@ -381,6 +382,9 @@ public class ShootingAiTut : MonoBehaviour
     public GameObject projectile;
 
     NeuralNetwork ann;
+    public NNModel modelAsset;
+    private Model m_RuntimeModel;
+    IWorker m_Worker;
 
     // Get path for required file
     private static string getPath(){
@@ -427,6 +431,14 @@ public class ShootingAiTut : MonoBehaviour
 
         ann = new NeuralNetwork(nNeuronsInEachLayer, weights);   // Identity activation function by default
         ann.ActivationAlgorithm = NeuralNetwork.ActivationAlgorithms.BentIdentity;
+        m_RuntimeModel = ModelLoader.Load(getPath() + "/test.onnx");
+        if (modelAsset == null) {
+            Debug.Log("Help :(");
+        } else {
+            m_RuntimeModel = ModelLoader.Load(modelAsset);
+            // <WorkerFactory.Type>, 
+            m_Worker = WorkerFactory.CreateWorker(WorkerFactory.Type.ComputePrecompiled, m_RuntimeModel);
+        }
     }
     private void Update()
     {
@@ -495,6 +507,15 @@ public class ShootingAiTut : MonoBehaviour
 
             //Attack
             Rigidbody rb = Instantiate(projectile, transform.position, Quaternion.identity).GetComponent<Rigidbody>();
+
+/*            float[] inArr = {transform.position.x, transform.position.z, player.position.x, player.position.z};
+            Tensor input = new Tensor(4, 1, 1, 1, inArr);
+            m_Worker.Execute(input);
+            Tensor output = m_Worker.PeekOutput();
+            float[] outArr = output.readonlyArray;
+            Vector3 direction = new Vector3(outArr[0], 0, outArr[1]);
+            input.Dispose();
+            output.Dispose()*/
 
             rb.AddForce(executeNet(transform.position, player.position) * 32f, ForceMode.Impulse);
             rb.AddForce(transform.up * 12, ForceMode.Impulse);
