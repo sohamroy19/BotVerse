@@ -7,7 +7,7 @@ Initialises a Neural Network with 1 hidden layer with random values
 The onnx file must be placed as **/Assets/test.onnx** (for example)
 layer neurons: 4, 4, 2
 
-Need to install the Unity package from https://github.com/AdamBebko/UnityH5Loader for HDF5
+Need to install the Unity package from https://github.com/AdamBebko/UnityH5Loader for HDF5<br>
 Need to install the Unity package from https://github.com/Unity-Technologies/barracuda-release for Barracuda
 
 TODO: Implement Barracuda correctly
