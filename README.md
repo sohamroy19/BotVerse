@@ -10,4 +10,4 @@ layer neurons: 4, 4, 2
 Need to install the Unity package from https://github.com/AdamBebko/UnityH5Loader for HDF5<br>
 Need to install the Unity package from https://github.com/Unity-Technologies/barracuda-release for Barracuda
 
-TODO: Implement Barracuda correctly
+Implemented Barracuda correctly!
