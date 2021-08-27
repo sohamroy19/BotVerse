@@ -1,4 +1,4 @@
-# udacity
+# Udacity
 
 Download the udacity software from  
 https://github.com/udacity/self-driving-car-sim  
