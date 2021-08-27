@@ -1,7 +1,6 @@
 ﻿using System.IO;   
 using UnityEngine;
 using UnityEngine.AI;
-using UnityH5Loader;
 using Unity.Barracuda;
 
 public class ShootingAiTut : MonoBehaviour
